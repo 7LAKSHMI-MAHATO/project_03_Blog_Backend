@@ -5,6 +5,7 @@ const multer = require("multer")
 const uploadfile = require('./services/storage.service')
 const postModel = require("./models/post.models")
 const cors = require("cors")
+const commentModel = require("./models/comment.models")
 
 const app = express()
 app.use(cors())
@@ -40,6 +41,64 @@ catch(err){
     return res.status(500).json({error: err.message||"server error"})
 }
 })
+
+// Add comment
+app.post("/comments", async (req, res) => {
+    try {
+        const { postId, text } = req.body
+
+        console.log("POST ID RECEIVED:", postId)
+        console.log("TEXT RECEIVED:", text)
+
+
+        if (!postId || !text) {
+            return res.status(400).json({
+                message: "Post ID and comment are required"
+            })
+        }
+
+        const comment = await commentModel.create({
+            postId,
+            text
+        })
+
+         console.log("COMMENT SAVED:", comment)
+
+
+        res.status(201).json({
+            message: "Comment added successfully",
+            comment
+        })
+
+    } catch (error) {
+        console.log(error)
+
+        res.status(500).json({
+            message: "Failed to add comment"
+        })
+    }
+})
+
+
+
+// Get comments for a post
+app.get("/comments/:postId", async (req, res) => {
+    try {
+        const { postId } = req.params
+
+        const comments = await commentModel.find({ postId })
+        
+        res.status(200).json(comments)
+
+    } catch (error) {
+        console.log(error)
+
+        res.status(500).json({
+            message: "Failed to get comments"
+        })
+    }
+})
+
 
 // read posts
 app.get("/posts", async(req,res) => {

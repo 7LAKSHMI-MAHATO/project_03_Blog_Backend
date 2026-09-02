@@ -9,24 +9,52 @@ const Feed = () => {
     const [editedCaption, setEditedCaption] = useState("")
 
 
+
+    const [commentText, setCommentText] = useState({})
+    const [comments, setComments] = useState({})
+
+
     // ================= GET POSTS =================
 
-    useEffect(() => {
+   useEffect(() => {
 
-        axios.get("http://localhost:3000/posts")
-            .then((res) => {
+    const fetchPostsAndComments = async () => {
 
-                setPosts(res.data.posts)
+        try {
 
-            })
-            .catch((err) => {
+            const postResponse = await axios.get(
+                "http://localhost:3000/posts"
+            )
 
-                console.error(err)
+            const postsData = postResponse.data.posts
 
-            })
+            setPosts(postsData)
 
-    }, [])
 
+            const commentsData = {}
+
+            for (const post of postsData) {
+
+                const commentResponse = await axios.get(
+                    `http://localhost:3000/comments/${post._id}`
+                )
+
+                commentsData[post._id] =
+                    commentResponse.data
+            }
+
+            setComments(commentsData)
+
+        } catch (err) {
+
+            console.error(err)
+
+        }
+    }
+
+    fetchPostsAndComments()
+
+}, [])
 
     // ================= DELETE =================
 
@@ -119,6 +147,50 @@ const Feed = () => {
     }
 
 
+
+    // ================= ADD COMMENT =================
+
+const handleComment = async (postId) => {
+
+    try {
+
+        const text = commentText[postId]
+
+        if (!text || text.trim() === "") {
+            return
+        }
+
+        const res = await axios.post(
+            "http://localhost:3000/comments",
+            {
+                postId: postId,
+                text: text
+            }
+        )
+
+        setComments((prevComments) => ({
+            ...prevComments,
+            [postId]: [
+                ...(prevComments[postId] || []),
+                res.data.comment
+            ]
+        }))
+
+        setCommentText((prevText) => ({
+            ...prevText,
+            [postId]: ""
+        }))
+
+    } catch (err) {
+
+        console.error(err)
+
+        alert("Error adding comment")
+
+    }
+}
+
+
     // ================= UI =================
 
     return (
@@ -203,8 +275,8 @@ const Feed = () => {
 
                                 {
                                     post.liked
-                                        ? "Unlike"
-                                        : "Like"
+                                        ? "❤️"
+                                        : "🤍"
                                 }
 
                                 {" "}
@@ -212,6 +284,51 @@ const Feed = () => {
                                 {post.likes}
 
                             </button>
+
+
+
+                            {/* COMMENTS */}
+
+<div>
+
+    <input
+        type="text"
+        placeholder="Write a comment..."
+        value={commentText[post._id] || ""}
+        onChange={(e) =>
+            setCommentText((prevText) => ({
+                ...prevText,
+                [post._id]: e.target.value
+            }))
+        }
+    />
+
+    <button
+        onClick={() =>
+            handleComment(post._id)
+        }
+    >
+        Comment
+    </button>
+
+</div>
+
+
+{/* DISPLAY COMMENTS */}
+
+<div>
+
+    {
+        comments[post._id]?.map((comment) => (
+
+            <p key={comment._id}>
+                💬 {comment.text}
+            </p>
+
+        ))
+    }
+
+</div>
 
 
                             {/* EDIT */}
