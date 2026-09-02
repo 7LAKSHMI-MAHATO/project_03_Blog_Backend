@@ -10,7 +10,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 const upload = multer({ storage:multer.memoryStorage() })
-
+// create post route
 app.post("/create-post", upload.single("image"), async (req,res)=>{
 
     // console.log(req.body)
@@ -41,7 +41,7 @@ catch(err){
 }
 })
 
-
+// read posts
 app.get("/posts", async(req,res) => {
 
 
@@ -53,14 +53,118 @@ app.get("/posts", async(req,res) => {
     })
 })
 
+// dealete post
+app.delete("/posts/:id", async (req, res) => {
+    try {
+        const post = await postModel.findByIdAndDelete(req.params.id)
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Post not found"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Post deleted successfully",
+            post
+        })
+    } catch (err) {
+        console.error(err)
+
+        return res.status(500).json({
+            error: err.message || "Server error"
+        })
+    }
+})
 
 
 
 
+// UPDATE POST CAPTION
+app.put("/posts/:id", async (req, res) => {
+    try {
+        const post = await postModel.findByIdAndUpdate(
+            req.params.id,
+            {
+                caption: req.body.caption
+            },
+            {
+                new: true
+            }
+        )
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Post not found"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Post updated successfully",
+            post
+        })
+
+    } catch (err) {
+        console.error(err)
+
+        return res.status(500).json({
+            error: err.message || "Server error"
+        })
+    }
+})
 
 
 
 
+// ================= LIKE / UNLIKE POST =================
+
+app.put("/posts/:id/like", async (req, res) => {
+
+    try {
+
+        const post = await postModel.findById(req.params.id)
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Post not found"
+            })
+        }
+
+        // If already liked → Unlike
+        if (post.liked === true) {
+
+            post.liked = false
+            post.likes = Math.max(0, post.likes - 1)
+
+        }
+
+        // If not liked → Like
+        else {
+
+            post.liked = true
+            post.likes = post.likes + 1
+
+        }
+
+        await post.save()
+
+        return res.status(200).json({
+            message: post.liked
+                ? "Post liked successfully"
+                : "Post unliked successfully",
+            post
+        })
+
+    } catch (err) {
+
+        console.error(err)
+
+        return res.status(500).json({
+            error: err.message || "Server error"
+        })
+    }
+})
+ 
 
 
 
