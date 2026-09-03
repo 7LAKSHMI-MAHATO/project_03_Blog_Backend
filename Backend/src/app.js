@@ -6,10 +6,120 @@ const uploadfile = require('./services/storage.service')
 const postModel = require("./models/post.models")
 const cors = require("cors")
 const commentModel = require("./models/comment.models")
+const userModel = require("./models/user.models")
+
+
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+
+// ================= SIGNUP =================
+
+app.post("/signup", async (req, res) => {
+
+    try {
+
+        const { username, email, password } = req.body
+
+        // Check all fields
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                message: "All fields are required"
+            })
+        }
+
+        // Check if username already exists
+        const existingUsername = await userModel.findOne({
+            username: username
+        })
+
+        if (existingUsername) {
+            return res.status(400).json({
+                message: "Username already exists"
+            })
+        }
+
+        // Check if email already exists
+        const existingEmail = await userModel.findOne({
+            email: email
+        })
+
+        if (existingEmail) {
+            return res.status(400).json({
+                message: "Email already exists"
+            })
+        }
+
+        // Create user
+        const user = await userModel.create({
+            username,
+            email,
+            password
+        })
+
+        return res.status(201).json({
+            message: "User registered successfully",
+            user
+        })
+
+    } catch (error) {
+
+        console.error(error)
+
+        return res.status(500).json({
+            message: "Signup failed"
+        })
+    }
+})
+
+
+// ================= LOGIN =================
+
+app.post("/login", async (req, res) => {
+
+    try {
+
+        const { email, password } = req.body
+
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required"
+            })
+        }
+
+        const user = await userModel.findOne({
+            email: email
+        })
+
+        if (!user) {
+            return res.status(401).json({
+                message: "Invalid email or password"
+            })
+        }
+
+        if (user.password !== password) {
+            return res.status(401).json({
+                message: "Invalid email or password"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Login successful",
+            user
+        })
+
+    } catch (error) {
+
+        console.error(error)
+
+        return res.status(500).json({
+            message: "Login failed"
+        })
+    }
+})
+
+
 const upload = multer({ storage:multer.memoryStorage() })
 // create post route
 app.post("/create-post", upload.single("image"), async (req,res)=>{
@@ -42,14 +152,16 @@ catch(err){
 }
 })
 
-// Add comment
+// ================= ADD COMMENT =================
+
 app.post("/comments", async (req, res) => {
+
     try {
+
         const { postId, text } = req.body
 
         console.log("POST ID RECEIVED:", postId)
         console.log("TEXT RECEIVED:", text)
-
 
         if (!postId || !text) {
             return res.status(400).json({
@@ -57,36 +169,51 @@ app.post("/comments", async (req, res) => {
             })
         }
 
+        // Get logged-in user from localStorage sent by frontend
+        const username = req.body.username
+
+        if (!username) {
+            return res.status(400).json({
+                message: "Username is required"
+            })
+        }
+
         const comment = await commentModel.create({
             postId,
+            username,
             text
         })
 
-         console.log("COMMENT SAVED:", comment)
+        console.log("COMMENT SAVED:", comment)
 
-
-        res.status(201).json({
+        return res.status(201).json({
             message: "Comment added successfully",
             comment
         })
 
     } catch (error) {
-        console.log(error)
 
-        res.status(500).json({
+        console.error(error)
+
+        return res.status(500).json({
             message: "Failed to add comment"
         })
     }
 })
-
+     
+   
 
 
 // Get comments for a post
 app.get("/comments/:postId", async (req, res) => {
     try {
         const { postId } = req.params
+         console.log("GET COMMENTS FOR POST:", postId)
 
         const comments = await commentModel.find({ postId })
+
+        console.log("COMMENTS FOUND:", comments)
+        
         
         res.status(200).json(comments)
 
@@ -98,6 +225,40 @@ app.get("/comments/:postId", async (req, res) => {
         })
     }
 })
+
+
+// ================= DELETE COMMENT =================
+
+app.delete("/comments/:commentId", async (req, res) => {
+    try {
+        const { commentId } = req.params
+
+        const comment = await commentModel.findByIdAndDelete(commentId)
+
+        if (!comment) {
+            return res.status(404).json({
+                message: "Comment not found"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Comment deleted successfully",
+            comment
+        })
+
+    } catch (error) {
+        console.error(error)
+
+        return res.status(500).json({
+            message: "Failed to delete comment"
+        })
+    }
+})
+
+
+
+
+
 
 
 // read posts

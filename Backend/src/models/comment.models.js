@@ -8,6 +8,11 @@ const commentSchema = new mongoose.Schema(
             required: true
         },
 
+        username: {
+            type: String,
+            required: true
+        },
+
         text: {
             type: String,
             required: true

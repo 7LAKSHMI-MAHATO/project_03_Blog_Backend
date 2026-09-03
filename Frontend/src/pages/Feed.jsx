@@ -155,6 +155,7 @@ const handleComment = async (postId) => {
     try {
 
         const text = commentText[postId]
+        const user = JSON.parse(localStorage.getItem("user"))
 
         if (!text || text.trim() === "") {
             return
@@ -164,7 +165,8 @@ const handleComment = async (postId) => {
             "http://localhost:3000/comments",
             {
                 postId: postId,
-                text: text
+                text: text,
+                   username: user.username
             }
         )
 
@@ -189,6 +191,38 @@ const handleComment = async (postId) => {
 
     }
 }
+
+
+// ================= DELETE COMMENT =================
+
+const handleDeleteComment = async (commentId, postId) => {
+
+    try {
+
+        await axios.delete(
+            `http://localhost:3000/comments/${commentId}`
+        )
+
+        setComments((prevComments) => ({
+            ...prevComments,
+            [postId]: prevComments[postId].filter(
+                (comment) => comment._id !== commentId
+            )
+        }))
+
+    } catch (err) {
+
+        console.error(err)
+
+        alert("Error deleting comment")
+
+    }
+}
+
+
+
+
+
 
 
     // ================= UI =================
@@ -314,6 +348,8 @@ const handleComment = async (postId) => {
 </div>
 
 
+
+
 {/* DISPLAY COMMENTS */}
 
 <div>
@@ -321,15 +357,31 @@ const handleComment = async (postId) => {
     {
         comments[post._id]?.map((comment) => (
 
-            <p key={comment._id}>
-                💬 {comment.text}
-            </p>
+            <div key={comment._id}>
+
+                <p>
+                  
+    💬 <strong>{comment.username}</strong>: {comment.text}
+</p>
+                
+
+                <button
+                    onClick={() =>
+                        handleDeleteComment(
+                            comment._id,
+                            post._id
+                        )
+                    }
+                >
+                    Delete
+                </button>
+
+            </div>
 
         ))
     }
 
 </div>
-
 
                             {/* EDIT */}
 
