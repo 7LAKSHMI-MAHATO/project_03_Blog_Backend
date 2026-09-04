@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import axios from "axios"
 
 const Feed = () => {
+    const user = JSON.parse(localStorage.getItem("user"))
 
     const [posts, setPosts] = useState([])
 
@@ -55,69 +56,71 @@ const Feed = () => {
     fetchPostsAndComments()
 
 }, [])
+const handleDelete = async (id) => {
 
-    // ================= DELETE =================
+    try {
 
-    const handleDelete = async (id) => {
-
-        try {
-
-            await axios.delete(
-                `http://localhost:3000/posts/${id}`
-            )
-
-            setPosts((prevPosts) =>
-                prevPosts.filter(
-                    (post) => post._id !== id
-                )
-            )
-
-        } catch (err) {
-
-            console.error(err)
-
-            alert("Error deleting post")
-
-        }
-    }
-
-
-    // ================= EDIT =================
-
-    const handleEdit = async (id) => {
-
-        try {
-
-            const res = await axios.put(
-                `http://localhost:3000/posts/${id}`,
-                {
-                    caption: editedCaption
+        await axios.delete(
+            `http://localhost:3000/posts/${id}`,
+            {
+                data: {
+                    username: user.username
                 }
+            }
+        )
+
+        setPosts((prevPosts) =>
+            prevPosts.filter(
+                (post) => post._id !== id
             )
+        )
 
-            setPosts((prevPosts) =>
-                prevPosts.map((post) =>
-                    post._id === id
-                        ? {
-                            ...post,
-                            caption: res.data.post.caption
-                        }
-                        : post
-                )
-            )
+    } catch (err) {
 
-            setEditingId(null)
-            setEditedCaption("")
+        console.error(err)
 
-        } catch (err) {
+        alert("Error deleting post")
 
-            console.error(err)
-
-            alert("Error updating post")
-
-        }
     }
+}
 
+
+    // ================= EDIT ============
+
+const handleEdit = async (id) => {
+
+    try {
+
+        const res = await axios.put(
+            `http://localhost:3000/posts/${id}`,
+            {
+                caption: editedCaption,
+                username: user.username
+            }
+        )
+
+        setPosts((prevPosts) =>
+            prevPosts.map((post) =>
+                post._id === id
+                    ? {
+                        ...post,
+                        caption: res.data.post.caption
+                    }
+                    : post
+            )
+        )
+
+        setEditingId(null)
+        setEditedCaption("")
+
+    } catch (err) {
+
+        console.error(err)
+
+        alert("Error updating post")
+
+    }
+}
 
     // ================= LIKE / UNLIKE =================
 
@@ -385,32 +388,32 @@ const handleDeleteComment = async (commentId, postId) => {
 
                             {/* EDIT */}
 
-                            <button
-                                onClick={() => {
+                            {user && user.username === post.username && (
+    <button
+        onClick={() => {
 
-                                    setEditingId(post._id)
+            setEditingId(post._id)
 
-                                    setEditedCaption(
-                                        post.caption
-                                    )
+            setEditedCaption(post.caption)
 
-                                }}
-                            >
-                                Edit
-                            </button>
+        }}
+    >
+        Edit
+    </button>
+)}
 
 
                             {/* DELETE */}
 
-                            <button
-                                onClick={() =>
-                                    handleDelete(
-                                        post._id
-                                    )
-                                }
-                            >
-                                Delete
-                            </button>
+                           {user && user.username === post.username && (
+    <button
+        onClick={() =>
+            handleDelete(post._id)
+        }
+    >
+        Delete
+    </button>
+)}
 
                         </div>
 

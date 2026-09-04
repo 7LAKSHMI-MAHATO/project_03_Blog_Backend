@@ -10,6 +10,15 @@ const CreatePost = () => {
 
 
     const formData = new FormData(e.target)
+
+const user = JSON.parse(
+    localStorage.getItem("user")
+)
+
+formData.append(
+    "username",
+    user.username
+)
     axios.post('http://localhost:3000/create-post', formData)
       .then((res) => {
       navigate("/feed")

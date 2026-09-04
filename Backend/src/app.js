@@ -121,7 +121,10 @@ app.post("/login", async (req, res) => {
 
 
 const upload = multer({ storage:multer.memoryStorage() })
+
+
 // create post route
+
 app.post("/create-post", upload.single("image"), async (req,res)=>{
 
     // console.log(req.body)
@@ -138,7 +141,8 @@ app.post("/create-post", upload.single("image"), async (req,res)=>{
     // console.log(result)
     const post = await postModel.create({
         image: result.url,
-        caption: req.body.caption
+        caption: req.body.caption,
+        username: req.body.username
     })
     
    return res.status(201).json({
@@ -273,10 +277,16 @@ app.get("/posts", async(req,res) => {
     })
 })
 
-// dealete post
+
+       // ================= DELETE POST =================
+
 app.delete("/posts/:id", async (req, res) => {
+
     try {
-        const post = await postModel.findByIdAndDelete(req.params.id)
+
+        const { username } = req.body
+
+        const post = await postModel.findById(req.params.id)
 
         if (!post) {
             return res.status(404).json({
@@ -284,11 +294,22 @@ app.delete("/posts/:id", async (req, res) => {
             })
         }
 
+        // Check if user is the owner
+        if (post.username !== username) {
+            return res.status(403).json({
+                error: "You can only delete your own post"
+            })
+        }
+
+        await postModel.findByIdAndDelete(req.params.id)
+
         return res.status(200).json({
             message: "Post deleted successfully",
             post
         })
+
     } catch (err) {
+
         console.error(err)
 
         return res.status(500).json({
@@ -302,16 +323,12 @@ app.delete("/posts/:id", async (req, res) => {
 
 // UPDATE POST CAPTION
 app.put("/posts/:id", async (req, res) => {
+
     try {
-        const post = await postModel.findByIdAndUpdate(
-            req.params.id,
-            {
-                caption: req.body.caption
-            },
-            {
-                new: true
-            }
-        )
+
+        const { caption, username } = req.body
+
+        const post = await postModel.findById(req.params.id)
 
         if (!post) {
             return res.status(404).json({
@@ -319,12 +336,25 @@ app.put("/posts/:id", async (req, res) => {
             })
         }
 
+        // Check if user is the owner
+        if (post.username !== username) {
+            return res.status(403).json({
+                error: "You can only edit your own post"
+            })
+        }
+
+        // Update caption
+        post.caption = caption
+
+        await post.save()
+
         return res.status(200).json({
-            message: "Post updated successfully",
+            message: "Post caption updated successfully",
             post
         })
 
     } catch (err) {
+
         console.error(err)
 
         return res.status(500).json({
@@ -332,7 +362,6 @@ app.put("/posts/:id", async (req, res) => {
         })
     }
 })
-
 
 
 
