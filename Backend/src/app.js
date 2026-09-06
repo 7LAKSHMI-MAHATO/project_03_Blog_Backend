@@ -2,8 +2,8 @@
 
 const express = require("express")
 const multer = require("multer")
-const uploadfile = require('./services/storage.service')
 const postModel = require("./models/post.models")
+const { uploadfile, deletefile } = require('./services/storage.service')
 const cors = require("cors")
 const commentModel = require("./models/comment.models")
 const userModel = require("./models/user.models")
@@ -141,6 +141,7 @@ app.post("/create-post", upload.single("image"), async (req,res)=>{
     // console.log(result)
     const post = await postModel.create({
         image: result.url,
+        imageId: result.fileId,
         caption: req.body.caption,
         username: req.body.username
     })
@@ -234,10 +235,13 @@ app.get("/comments/:postId", async (req, res) => {
 // ================= DELETE COMMENT =================
 
 app.delete("/comments/:commentId", async (req, res) => {
-    try {
-        const { commentId } = req.params
 
-        const comment = await commentModel.findByIdAndDelete(commentId)
+    try {
+
+        const { commentId } = req.params
+        const { username } = req.body
+
+        const comment = await commentModel.findById(commentId)
 
         if (!comment) {
             return res.status(404).json({
@@ -245,12 +249,22 @@ app.delete("/comments/:commentId", async (req, res) => {
             })
         }
 
+        // Check if user is the owner of the comment
+        if (comment.username !== username) {
+            return res.status(403).json({
+                message: "You can only delete your own comment"
+            })
+        }
+
+        await commentModel.findByIdAndDelete(commentId)
+
         return res.status(200).json({
             message: "Comment deleted successfully",
             comment
         })
 
     } catch (error) {
+
         console.error(error)
 
         return res.status(500).json({
@@ -258,9 +272,6 @@ app.delete("/comments/:commentId", async (req, res) => {
         })
     }
 })
-
-
-
 
 
 
@@ -278,7 +289,7 @@ app.get("/posts", async(req,res) => {
 })
 
 
-       // ================= DELETE POST =================
+    // ================= DELETE POST =================
 
 app.delete("/posts/:id", async (req, res) => {
 
@@ -301,6 +312,12 @@ app.delete("/posts/:id", async (req, res) => {
             })
         }
 
+        // Delete image from ImageKit
+        if (post.imageId) {
+            await deletefile(post.imageId)
+        }
+
+        // Delete post from MongoDB
         await postModel.findByIdAndDelete(req.params.id)
 
         return res.status(200).json({
@@ -317,7 +334,6 @@ app.delete("/posts/:id", async (req, res) => {
         })
     }
 })
-
 
 
 

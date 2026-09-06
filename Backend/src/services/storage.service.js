@@ -1,4 +1,4 @@
-const {ImageKit} = require("@imagekit/nodejs/index.js")
+const { ImageKit } = require("@imagekit/nodejs/index.js")
 
 const imagekit = new ImageKit({
     publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
@@ -6,17 +6,25 @@ const imagekit = new ImageKit({
     urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
 })
 
-
-
-async function uploadfile(buffer){
-    // console.log(buffer)
+async function uploadfile(buffer) {
 
     const result = await imagekit.files.upload({
         file: buffer.toString("base64"),
         fileName: "image.jpg"
     })
+
     return result
-    
 }
 
-module.exports = uploadfile
+// DELETE IMAGE FROM IMAGEKIT
+async function deletefile(fileId) {
+
+    const result = await imagekit.files.delete(fileId)
+
+    return result
+}
+
+module.exports = {
+    uploadfile,
+    deletefile
+}

@@ -197,13 +197,17 @@ const handleComment = async (postId) => {
 
 
 // ================= DELETE COMMENT =================
-
 const handleDeleteComment = async (commentId, postId) => {
 
     try {
 
         await axios.delete(
-            `http://localhost:3000/comments/${commentId}`
+            `http://localhost:3000/comments/${commentId}`,
+            {
+                data: {
+                    username: user.username
+                }
+            }
         )
 
         setComments((prevComments) => ({
@@ -221,7 +225,6 @@ const handleDeleteComment = async (commentId, postId) => {
 
     }
 }
-
 
 
 
@@ -367,7 +370,7 @@ const handleDeleteComment = async (commentId, postId) => {
     💬 <strong>{comment.username}</strong>: {comment.text}
 </p>
                 
-
+{user && user.username === comment.username && (
                 <button
                     onClick={() =>
                         handleDeleteComment(
@@ -377,7 +380,7 @@ const handleDeleteComment = async (commentId, postId) => {
                     }
                 >
                     Delete
-                </button>
+                </button>)}
 
             </div>
 
